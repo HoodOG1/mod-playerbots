@@ -76,7 +76,7 @@ public:
     {
         std::set<std::string> keys;
         for (typename std::unordered_map<std::string, ActionCreator>::iterator it = creators.begin();
-             it != creators.end(); it++)
+            it != creators.end(); it++)
             keys.insert(it->first);
 
         return keys;
@@ -118,7 +118,7 @@ public:
     void Update()
     {
         auto updater = [](const auto& kvp) {
-            if (kvp.value)Add commentMore actions
+            if (kvp.value)
                 kvp.value->Update();
         };
 
@@ -137,7 +137,9 @@ public:
 
     std::set<std::string> GetCreated()
     {
-        auto collector = [&keys](const auto& kvp) {Add commentMore actions
+        std::set<std::string> keys;
+
+        auto collector = [&keys](const auto& kvp) {
             keys.insert(kvp.key);
         };
         created.cwalk(collector);

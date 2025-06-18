@@ -69,7 +69,7 @@ class PlayerbotAI;
 class ActionContext : public NamedObjectContext<Action>
 {
 public:
-    ActionContext()
+    ActionContext() : NamedObjectContext<Action>()
     {
         creators["mark rti"] = &ActionContext::mark_rti;
         creators["set return position"] = &ActionContext::set_return_position;

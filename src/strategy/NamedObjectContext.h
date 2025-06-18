@@ -11,8 +11,10 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
+#include <shared_mutex>
 
 #include "Common.h"
+#include "LRUCache11.hpp"
 
 class PlayerbotAI;
 
@@ -94,55 +96,60 @@ public:
 
     T* create(std::string const name, PlayerbotAI* botAI)
     {
-        if (created.find(name) == created.end())
-            return created[name] = NamedObjectFactory<T>::create(name, botAI);
-
-        return created[name];
+        T* obj = nullptr;
+        if (!created.tryGet(name, obj)) {
+            obj = NamedObjectFactory<T>::create(name, botAI);
+            created.insert(name, obj);
+        }
+        return obj;
     }
 
     void Clear()
     {
-        for (typename std::unordered_map<std::string, T*>::iterator i = created.begin(); i != created.end(); i++)
-        {
-            if (i->second)
-                delete i->second;
-        }
+        auto deleter = [](const auto& kvp) {
+            if (kvp.value)
+                delete kvp.value;
+        };
 
+        created.cwalk(deleter);
         created.clear();
     }
 
     void Update()
     {
-        for (typename std::unordered_map<std::string, T*>::iterator i = created.begin(); i != created.end(); i++)
-        {
-            if (i->second)
-                i->second->Update();
-        }
+        auto updater = [](const auto& kvp) {
+            if (kvp.value)Add commentMore actions
+                kvp.value->Update();
+        };
+
+        created.cwalk(updater);
     }
 
     void Reset()
     {
-        for (typename std::unordered_map<std::string, T*>::iterator i = created.begin(); i != created.end(); i++)
-        {
-            if (i->second)
-                i->second->Reset();
-        }
+        auto resetter = [](const auto& kvp) {
+            if (kvp.value)
+                kvp.value->Reset();
+        };
+
+        created.cwalk(resetter);
+    }
+
+    std::set<std::string> GetCreated()
+    {
+        auto collector = [&keys](const auto& kvp) {Add commentMore actions
+            keys.insert(kvp.key);
+        };
+        created.cwalk(collector);
+
+        return keys;
     }
 
     bool IsShared() { return shared; }
     bool IsSupportsSiblings() { return supportsSiblings; }
 
-    std::set<std::string> GetCreated()
-    {
-        std::set<std::string> keys;
-        for (typename std::unordered_map<std::string, T*>::iterator it = created.begin(); it != created.end(); it++)
-            keys.insert(it->first);
-
-        return keys;
-    }
-
 protected:
-    std::unordered_map<std::string, T*> created;
+    lru11::Cache<std::string, T*, std::shared_mutex> created{128, 10};
     bool shared;
     bool supportsSiblings;
 };

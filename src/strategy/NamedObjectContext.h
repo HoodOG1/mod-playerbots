@@ -14,7 +14,7 @@
 #include <shared_mutex>
 
 #include "Common.h"
-#include "LRUCache11.hpp"
+#include "LRUShards.hpp"
 
 class PlayerbotAI;
 
@@ -88,7 +88,8 @@ class NamedObjectContext : public NamedObjectFactory<T>
 {
 public:
     NamedObjectContext(bool shared = false, bool supportsSiblings = false)
-        : NamedObjectFactory<T>(), shared(shared), supportsSiblings(supportsSiblings)
+        : NamedObjectFactory<T>(), shared(shared), supportsSiblings(supportsSiblings),
+          created(16, 2) // z.B. 8 Shards * 32 = 256 max Objekte im Cache
     {
     }
 
@@ -110,7 +111,6 @@ public:
             if (kvp.value)
                 delete kvp.value;
         };
-
         created.cwalk(deleter);
         created.clear();
     }
@@ -121,7 +121,6 @@ public:
             if (kvp.value)
                 kvp.value->Update();
         };
-
         created.cwalk(updater);
     }
 
@@ -131,19 +130,16 @@ public:
             if (kvp.value)
                 kvp.value->Reset();
         };
-
         created.cwalk(resetter);
     }
 
     std::set<std::string> GetCreated()
     {
         std::set<std::string> keys;
-
         auto collector = [&keys](const auto& kvp) {
             keys.insert(kvp.key);
         };
         created.cwalk(collector);
-
         return keys;
     }
 
@@ -151,9 +147,9 @@ public:
     bool IsSupportsSiblings() { return supportsSiblings; }
 
 protected:
-    lru11::Cache<std::string, T*, std::shared_mutex> created{128, 10};
     bool shared;
     bool supportsSiblings;
+    ShardedLRUCache<std::string, T*, 16> created;
 };
 
 template <class T>

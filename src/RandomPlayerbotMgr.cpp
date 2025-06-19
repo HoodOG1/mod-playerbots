@@ -415,18 +415,6 @@ void RandomPlayerbotMgr::UpdateAIInternal(uint32 elapsed, bool /*minimal*/)
             sRandomPlayerbotMgr->CheckLfgQueue();
     }
 
-    if (sPlayerbotAIConfig->randomBotAutologin && time(nullptr) > (printStatsTimer + 300))
-    {
-        if (!printStatsTimer)
-        {
-            printStatsTimer = time(nullptr);
-        }
-        else
-        {
-            sRandomPlayerbotMgr->PrintStats();
-            // activatePrintStatsThread();
-        }
-    }
     uint32 updateBots = sPlayerbotAIConfig->randomBotsPerInterval * onlineBotFocus / 100;
     uint32 maxNewBots = onlineBotCount < maxAllowedBotCount &&
                 (sPlayerbotAIConfig->disabledWithoutRealPlayer == false ||
